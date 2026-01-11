@@ -42,3 +42,37 @@ Sentinel is focused on **local system awareness**, not cloud monitoring.
   - Newly created files
   - Deleted files
  
+---
+
+## 🛠️ Tech Stack
+
+The implementation language and architecture will be chosen per tool
+based on performance, reliability, and access to low-level system APIs.
+
+Possible technologies:
+- Python (rapid development, cross-platform)
+- Rust (safety + performance)
+- SQLite (local persistence)
+
+---
+
+## ⚠️ Disclaimer
+
+Sentinel is intended for **educational, defensive, and system-monitoring purposes** only.
+
+You are responsible for how you use these tools.
+Do not deploy Sentinel on systems you do not own or have permission to monitor.
+
+---
+
+## 📌 Status
+
+🚧 **Early development / planning phase**
+
+Expect breaking changes, refactors, and experimentation.
+
+---
+
+## 📜 License
+
+MIT License
