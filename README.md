@@ -1,2 +1,44 @@
 # Sentinel
-Host-level monitoring &amp; system visibility tools
+
+**Sentinel** is a collection of host-level monitoring and security tools designed
+to give users deep visibility into what is happening on their system.
+
+The goal of Sentinel is simple:
+
+> **Know what your system is doing — even when you’re not looking.**
+
+This repository will evolve over time as new tools are added.
+
+---
+
+## 🎯 Vision
+
+Modern operating systems hide a lot of activity behind abstractions.
+Sentinel aims to remove that opacity by providing tools that help you:
+
+- Inspect active system behavior
+- Detect unexpected or unauthorized changes
+- Understand network and file system activity at a low level
+
+Sentinel is focused on **local system awareness**, not cloud monitoring.
+
+---
+
+## 🧰 Planned Tooling (Early Stage)
+
+> These tools are under active development and may change.
+
+### 🔌 Network Monitoring
+- View established network connections
+- Resolve remote IPs to domain names
+- Identify which application/process owns each connection
+
+### 🧾 File Integrity Monitoring
+- Scan the entire file system
+- Generate cryptographic hashes for files
+- Store hashes in a local database
+- Detect:
+  - File modifications
+  - Newly created files
+  - Deleted files
+ 
