@@ -53,7 +53,7 @@ Possible technologies:
 - Rust (safety + performance)
 - SQLite (local persistence)
 
----
+
 
 ## Disclaimer
 
@@ -62,7 +62,7 @@ Sentinel is intended for **educational, defensive, and system-monitoring purpose
 You are responsible for how you use these tools.
 Do not deploy Sentinel on systems you do not own or have permission to monitor.
 
----
+
 
 ## Status
 
