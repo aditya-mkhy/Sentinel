@@ -5,10 +5,21 @@ mod models;
 use clap::Parser;
 use cli::Args;
 use scanner::scan_active_connections;
+use sysinfo::System;
+use sysinfo::Pid;
 
 fn main() {
     let args = Args::parse();
-    let connections = scan_active_connections();
+    let mut connections = scan_active_connections();
+    
+    let mut system = System::new();
+    system.refresh_processes();
+
+    for c in &mut connections {
+        if let Some(proc) = system.process(Pid::from(c.pid as usize)) {
+            c.process = proc.name().to_string();
+        }
+    }
 
     // 🔹 JSON MODE (machine-readable)
     if args.json {
