@@ -9,21 +9,34 @@ use cli::Args;
 use scanner::scan_active_connections;
 use sysinfo::System;
 use sysinfo::Pid;
-use std::collections::HashMap;
 
 fn main() {
     let args = Args::parse();
+
+    let resolve = args.resolve || args.resolve_refresh;
+    let refresh = args.resolve_refresh;
+
     let mut connections = scan_active_connections();
 
     let mut system = System::new();
     system.refresh_processes();
 
-    let mut dns_cache: HashMap<String, String> = cache::load_dns_cache();
+    // Load cache ONLY when needed
+    let mut dns_cache = if resolve && !refresh {
+        cache::load_dns_cache()
+    } else {
+        std::collections::HashMap::new()
+    };
+
 
     for c in &mut connections {
         // process name
         if let Some(proc) = system.process(Pid::from(c.pid as usize)) {
             c.process = proc.name().to_string();
+        }
+
+        if !resolve {
+            continue;
         }
 
         // Reverse DNS with cache
@@ -34,21 +47,27 @@ fn main() {
             .unwrap_or("")
             .to_string();
 
-        if let Some(cached) = dns_cache.get(&remote_ip) {
-            c.domain = cached.clone();
-        } else {
-            let domain = resolver::reverse_dns(&remote_ip)
-                .unwrap_or_else(|| "-".to_string());
-
-            dns_cache.insert(remote_ip.clone(), domain.clone());
-            c.domain = domain;
+        if !refresh {
+            if let Some(cached) = dns_cache.get(&remote_ip) {
+                c.domain = cached.clone();
+                continue;
+            }
         }
+
+        let domain = resolver::reverse_dns(&remote_ip)
+            .unwrap_or_else(|| "-".to_string());
+
+        dns_cache.insert(remote_ip, domain.clone());
+        c.domain = domain;
 
     }
 
-    cache::save_dns_cache(&dns_cache); // save dns_cache
+    if resolve {
+        cache::save_dns_cache(&dns_cache); // save dns_cache
+    }
 
-    // JSON MODE (machine-readable)
+
+    // JSON MODE
     if args.json {
         let json = serde_json::to_string_pretty(&connections)
             .expect("Failed to serialize connections");
@@ -56,7 +75,7 @@ fn main() {
         return;
     }
 
-    // DEFAULT MODE (human-readable)
+    // DEFAULT MODE
     println!(
         "{:<6} {:<15} {:<22} {:<22} {}",
         "PID", "Process", "Local Address", "Remote Address", "Domain"
