@@ -1,9 +1,9 @@
 use std::fs;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Walk a directory recursively and print all files
+/// Walk a directory recursively and print file metadata
 pub fn walk_and_print(path: &Path) {
-    // Try to read directory
     let entries = match fs::read_dir(path) {
         Ok(e) => e,
         Err(err) => {
@@ -23,13 +23,40 @@ pub fn walk_and_print(path: &Path) {
 
         let entry_path = entry.path();
 
-        // If directory → recurse
         if entry_path.is_dir() {
             walk_and_print(&entry_path);
-        }
-        // If file → print
-        else if entry_path.is_file() {
-            println!("{}", entry_path.display());
+        } else if entry_path.is_file() {
+            print_file_metadata(&entry_path);
         }
     }
+}
+
+fn print_file_metadata(path: &Path) {
+    let metadata = match fs::metadata(path) {
+        Ok(m) => m,
+        Err(err) => {
+            eprintln!("Cannot read metadata {:?}: {}", path, err);
+            return;
+        }
+    };
+
+    let size = metadata.len();
+
+    let modified = match metadata.modified() {
+        Ok(time) => systemtime_to_unix(time),
+        Err(_) => 0,
+    };
+
+    println!(
+        "{} | size={} bytes | mtime={}",
+        path.display(),
+        size,
+        modified
+    );
+}
+
+fn systemtime_to_unix(time: SystemTime) -> u64 {
+    time.duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
