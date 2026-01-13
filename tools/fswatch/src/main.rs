@@ -1,4 +1,5 @@
 mod cli;
+mod scanner;
 
 use clap::Parser;
 use cli::{Cli, Commands};
@@ -9,6 +10,8 @@ fn main() {
     match cli.command {
         Commands::Scan { path, force, json } => {
             println!("scan -> path: {:?}, force: {}, json: {}", path, force, json);
+            println!("Scanning path: {:?}", path);
+            scanner::walk_and_print(&path);
         }
         Commands::Verify { path, json } => {
             println!("verify -> path: {:?}, json: {}", path, json);
