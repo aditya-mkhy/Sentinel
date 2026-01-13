@@ -2,8 +2,10 @@ use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Walk a directory recursively and print file metadata
-pub fn walk_and_print(path: &Path) {
+use crate::hasher;
+
+/// Walk filesystem, extract metadata, and hash files
+pub fn walk_and_scan(path: &Path) {
     let entries = match fs::read_dir(path) {
         Ok(e) => e,
         Err(err) => {
@@ -24,14 +26,14 @@ pub fn walk_and_print(path: &Path) {
         let entry_path = entry.path();
 
         if entry_path.is_dir() {
-            walk_and_print(&entry_path);
+            walk_and_scan(&entry_path);
         } else if entry_path.is_file() {
-            print_file_metadata(&entry_path);
+            scan_file(&entry_path);
         }
     }
 }
 
-fn print_file_metadata(path: &Path) {
+fn scan_file(path: &Path) {
     let metadata = match fs::metadata(path) {
         Ok(m) => m,
         Err(err) => {
@@ -47,11 +49,20 @@ fn print_file_metadata(path: &Path) {
         Err(_) => 0,
     };
 
+    let hash = match hasher::hash_file(path) {
+        Ok(h) => h,
+        Err(err) => {
+            eprintln!("Failed to hash {:?}: {}", path, err);
+            return;
+        }
+    };
+
     println!(
-        "{} | size={} bytes | mtime={}",
+        "{} | size={} | mtime={} | hash={}",
         path.display(),
         size,
-        modified
+        modified,
+        hash
     );
 }
 

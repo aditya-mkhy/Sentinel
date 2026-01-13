@@ -1,5 +1,6 @@
 mod cli;
 mod scanner;
+mod hasher;
 
 use clap::Parser;
 use cli::{Cli, Commands};
@@ -8,22 +9,25 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Scan { path, force, json } => {
-            println!("scan -> path: {:?}, force: {}, json: {}", path, force, json);
-            println!("Scanning path: {:?}", path);
-            scanner::walk_and_print(&path);
+        Commands::Scan { path, .. } => {
+            println!("Starting full scan: {:?}", path);
+            scanner::walk_and_scan(&path);
         }
-        Commands::Verify { path, json } => {
-            println!("verify -> path: {:?}, json: {}", path, json);
+
+        Commands::Verify { .. } => {
+            println!("Verify not implemented yet");
         }
-        Commands::Show { json } => {
-            println!("show -> json: {}", json);
+
+        Commands::Show { .. } => {
+            println!("Show not implemented yet");
         }
+
         Commands::Status => {
-            println!("status");
+            println!("Status not implemented yet");
         }
+
         Commands::Init => {
-            println!("init");
+            println!("Init not implemented yet");
         }
     }
 }
