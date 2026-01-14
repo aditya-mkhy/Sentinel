@@ -17,6 +17,8 @@ fn main() {
     let refresh = args.resolve_refresh;
 
     let mut connections = scan_active_connections();
+    let fast_resolver = resolver::create_fast_resolver();
+
 
     let mut system = System::new();
     system.refresh_processes();
@@ -54,7 +56,7 @@ fn main() {
             }
         }
 
-        let domain = resolver::reverse_dns(&remote_ip)
+        let domain = resolver::reverse_dns(&fast_resolver, &remote_ip)
             .unwrap_or_else(|| "-".to_string());
 
         dns_cache.insert(remote_ip, domain.clone());
