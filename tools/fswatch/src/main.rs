@@ -1,6 +1,7 @@
 mod cli;
 mod scanner;
 mod hasher;
+mod db;
 
 use clap::Parser;
 use cli::{Cli, Commands};
@@ -27,7 +28,10 @@ fn main() {
         }
 
         Commands::Init => {
-            println!("Init not implemented yet");
+            match db::init_db() {
+                Ok(_) => println!("Database initialized"),
+                Err(e) => eprintln!("Failed to initialize database: {}", e),
+            }
         }
     }
 }
