@@ -5,14 +5,19 @@ mod db;
 
 use clap::Parser;
 use cli::{Cli, Commands};
+use rusqlite::Connection;
 
 fn main() {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Scan { path, .. } => {
+            let db_path = db::db_path();
+            let conn = Connection::open(db_path)
+                .expect("Failed to open database");
+
             println!("Starting full scan: {:?}", path);
-            scanner::walk_and_scan(&path);
+            scanner::walk_and_scan(&path, &conn);
         }
 
         Commands::Verify { .. } => {

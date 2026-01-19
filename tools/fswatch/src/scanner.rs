@@ -2,10 +2,13 @@ use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use rusqlite::Connection;
+
+use crate::db;
 use crate::hasher;
 
-/// Walk filesystem, extract metadata, and hash files
-pub fn walk_and_scan(path: &Path) {
+/// Walk filesystem, extract metadata, hash files, and insert into DB
+pub fn walk_and_scan(path: &Path, conn: &Connection) {
     let entries = match fs::read_dir(path) {
         Ok(e) => e,
         Err(err) => {
@@ -26,36 +29,40 @@ pub fn walk_and_scan(path: &Path) {
         let entry_path = entry.path();
 
         if entry_path.is_dir() {
-            walk_and_scan(&entry_path);
+            walk_and_scan(&entry_path, conn);
         } else if entry_path.is_file() {
-            scan_file(&entry_path);
+            if let Err(e) = scan_file(&entry_path, conn) {
+                eprintln!("Failed to process {:?}: {}", entry_path, e);
+            }
         }
     }
 }
 
-fn scan_file(path: &Path) {
+fn scan_file(path: &Path, conn: &Connection) -> rusqlite::Result<()> {
     let metadata = match fs::metadata(path) {
         Ok(m) => m,
-        Err(err) => {
-            eprintln!("Cannot read metadata {:?}: {}", path, err);
-            return;
-        }
+        Err(_) => return Ok(()), // silently skip unreadable files
     };
 
     let size = metadata.len();
 
-    let modified = match metadata.modified() {
-        Ok(time) => systemtime_to_unix(time),
-        Err(_) => 0,
-    };
+    let modified = metadata
+        .modified()
+        .map(systemtime_to_unix)
+        .unwrap_or(0);
 
     let hash = match hasher::hash_file(path) {
         Ok(h) => h,
-        Err(err) => {
-            eprintln!("Failed to hash {:?}: {}", path, err);
-            return;
-        }
+        Err(_) => return Ok(()), // skip files we cannot hash
     };
+
+    db::upsert_file(
+        conn,
+        path.to_string_lossy().as_ref(),
+        size,
+        modified,
+        &hash,
+    )?;
 
     println!(
         "{} | size={} | mtime={} | hash={}",
@@ -64,6 +71,8 @@ fn scan_file(path: &Path) {
         modified,
         hash
     );
+
+    Ok(())
 }
 
 fn systemtime_to_unix(time: SystemTime) -> u64 {

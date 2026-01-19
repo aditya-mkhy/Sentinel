@@ -1,5 +1,22 @@
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use rusqlite::{Connection, Result};
+
+pub fn db_path() -> PathBuf {
+    let base = std::env::var("LOCALAPPDATA")
+        .expect("LOCALAPPDATA not set");
+
+    let mut path = PathBuf::from(base);
+    path.push("Sentinel");
+    path.push("fswatch");
+
+    std::fs::create_dir_all(&path)
+        .expect("Failed to create fswatch directory");
+
+    path.push("fswatch.db");
+    path
+}
 
 pub fn init_db() -> Result<()> {
     let path = db_path();
@@ -21,17 +38,30 @@ pub fn init_db() -> Result<()> {
     Ok(())
 }
 
+pub fn upsert_file(
+    conn: &Connection,
+    path: &str,
+    size: u64,
+    mtime: u64,
+    hash: &str,
+) -> Result<()> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
 
-fn db_path() -> PathBuf {
-    let base = std::env::var("LOCALAPPDATA")
-        .expect("LOCALAPPDATA not set");
+    conn.execute(
+        "
+        INSERT INTO files (path, size, mtime, hash, last_seen)
+        VALUES (?1, ?2, ?3, ?4, ?5)
+        ON CONFLICT(path) DO UPDATE SET
+            size = excluded.size,
+            mtime = excluded.mtime,
+            hash = excluded.hash,
+            last_seen = excluded.last_seen;
+        ",
+        (path, size, mtime, hash, now),
+    )?;
 
-    let mut path = PathBuf::from(base);
-    path.push("Sentinel");
-    path.push("fswatch");
-
-    std::fs::create_dir_all(&path).expect("Failed to create fswatch directory");
-
-    path.push("fswatch.db");
-    path
+    Ok(())
 }
