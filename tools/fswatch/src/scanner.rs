@@ -51,14 +51,24 @@ fn scan_file(path: &Path, conn: &Connection) -> rusqlite::Result<()> {
         .map(systemtime_to_unix)
         .unwrap_or(0);
 
-    let hash = match hasher::hash_file(path) {
-        Ok(h) => h,
-        Err(_) => return Ok(()), // skip files we cannot hash
-    };
+    let path_str = path.to_string_lossy();
+
+    if let Ok(Some((old_size, old_mtime))) =
+        db::get_file_meta(conn, &path_str)
+    {
+        if old_size == size && old_mtime == modified {
+            // File unchanged → skip hashing
+            db::touch_file(conn, &path_str)?;
+            return Ok(());
+        }
+    }
+
+    // File is new or changed → hash
+    let hash = hasher::hash_file(path)?;
 
     db::upsert_file(
         conn,
-        path.to_string_lossy().as_ref(),
+        &path_str,
         size,
         modified,
         &hash,

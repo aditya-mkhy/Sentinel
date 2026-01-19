@@ -65,3 +65,36 @@ pub fn upsert_file(
 
     Ok(())
 }
+
+pub fn get_file_meta(
+    conn: &Connection,
+    path: &str,
+) -> Result<Option<(u64, u64)>> {
+    let mut stmt = conn.prepare(
+        "SELECT size, mtime FROM files WHERE path = ?1"
+    )?;
+
+    let mut rows = stmt.query([path])?;
+
+    if let Some(row) = rows.next()? {
+        let size: u64 = row.get(0)?;
+        let mtime: u64 = row.get(1)?;
+        Ok(Some((size, mtime)))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn touch_file(conn: &Connection, path: &str) -> Result<()> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    conn.execute(
+        "UPDATE files SET last_seen = ?1 WHERE path = ?2",
+        (now, path),
+    )?;
+
+    Ok(())
+}
