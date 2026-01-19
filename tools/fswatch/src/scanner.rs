@@ -64,7 +64,15 @@ fn scan_file(path: &Path, conn: &Connection) -> rusqlite::Result<()> {
     }
 
     // File is new or changed → hash
-    let hash = hasher::hash_file(path)?;
+    let hash = match hasher::hash_file(path) {
+        Ok(h) => h,
+        Err(_) => {
+            // Cannot hash file (locked, permission, etc.)
+            // Skip silently
+            return Ok(());
+        }
+    };
+
 
     db::upsert_file(
         conn,
